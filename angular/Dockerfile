@@ -1,24 +1,27 @@
 #Using node as our base for the image
-FROM node:latest
+FROM node:12.6.0-alpine as build
 
 #Setting our working dir to /app
 
-WORKDIR /app
+WORKDIR /build
+
+#Copying our dir into /build
+
+COPY . .
 
 #Updating apt
 
-RUN apt-get update
-
-#adding dir path to PATH
-
-ENV PATH /app/node_modules/.bin:$PATH
-
-COPY package.json /app
 RUN NG_CLI_ANALYTICS=ci npm install
 RUN NGI_CLI_ANALYTICS=ci npm install -g @angular/cli
 
-COPY . /app
+RUN npm run build
+RUN ls dist
+#------------------------------------------------------------------------------------
+FROM nginx:1.17.1-alpine
 
-CMD ng serve --host 0.0.0.0
+WORKDIR /app
 
-EXPOSE 4200
+COPY --from=build /build/dist/TeamAPoolProjectUI .
+
+COPY nginx.conf /etc/nginx/nginx.conf
+
